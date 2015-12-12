@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ivy-module version="2.0" xmlns:m="http://ant.apache.org/ivy/maven">
+<!--===========================================================================
+PENTAHO CORPORATION PROPRIETARY AND CONFIDENTIAL
+
+Copyright 2002 - 2014 Pentaho Corporation (Pentaho). All rights reserved.
+
+NOTICE: All information including source code contained herein is, and
+remains the sole property of Pentaho and its licensors. The intellectual
+and technical concepts contained herein are proprietary and confidential
+to, and are trade secrets of Pentaho and may be covered by U.S. and foreign
+patents, or patents in process, and are protected by trade secret and
+copyright laws. The receipt or possession of this source code and/or related
+information does not convey or imply any rights to reproduce, disclose or
+distribute its contents, or to manufacture, use, or sell anything that it
+may describe, in whole or in part. Any reproduction, modification, distribution,
+or public display of this information without the express written authorization
+from Pentaho is strictly prohibited and in violation of applicable laws and
+international treaties. Access to the source code contained herein is strictly
+prohibited to anyone except those individuals and entities who have executed
+confidentiality and non-disclosure agreements or other agreements with Pentaho,
+explicitly covering such access.
+============================================================================-->
+  <info organisation="pentaho" module="${ivy.artifact.id}" revision="${project.revision}" />
+
+  <configurations>
+    <conf name="default" />
+    <conf name="test" visibility="private" />
+    <conf name="source" />
+    <conf name="zip" />
+    <conf name="provided" />
+    <conf name="obf" />
+  </configurations>
+
+  <publications>
+    <artifact name="${ivy.artifact.id}" type="jar" conf="default" />
+    <artifact name="${package.id}" type="zip" conf="zip" />
+  </publications>
+
+  <dependencies defaultconf="default->default">
+    <dependency org="com.opencsv" name="opencsv" rev="3.3" />
+    <dependency org="org.apache.commons" name="commons-io" rev="${dependency.commons-io.revision}" changing="false"/>
+    <dependency org="org.codehaus.jackson" name="jackson-core-asl" rev="${dependency.jackson-core.revision}" />
+    <dependency org="org.codehaus.jackson" name="jackson-mapper-asl" rev="${dependency.jackson-mapper.revision}" />
+    <dependency org="org.eclipse.swt.win32.win32" name="x86" rev="${dependency.swt.x86.revision}" conf="provided->default" transitive="false" /> 
+    <dependency org="org.eclipse" name="jface" rev="${dependency.eclipse.jface.revision}" conf="provided->default" transitive="false" />
+    
+    <dependency org="pentaho-kettle" name="kettle-engine" rev="${dependency.kettle.revision}" transitive="false" conf="provided->default"
+      changing="true" />
+    <dependency org="pentaho-kettle" name="kettle-core" rev="${dependency.kettle.revision}" transitive="false" conf="provided->default"
+      changing="true" />
+    <dependency org="pentaho-kettle" name="kettle-ui-swt" rev="${dependency.kettle.revision}" transitive="false" conf="provided->default"
+      changing="true" />
+
+    <dependency org="pentaho"             name="metastore"           rev="${dependency.pentaho-metastore.revision}" conf="provided->default"  changing="true" />
+
+    <dependency org="com.google.guava" name="guava" rev="${dependency.guava.revision}" transitive="false" conf="default->default"  changing="false"/>    
+    <dependency org="log4j"                    name="log4j"    conf="provided->default"       rev="${dependency.log4j.revision}" />
+
+    <dependency org="org.apache.commons" name="commons-vfs2" rev="${dependency.commons.vfs2.revision}" transitive="false" conf="provided->default"/>
+<!--   <dependency org="commons-vfs" name="commons-vfs" rev="${dependency.commons.vfs.revision}" transitive="false" conf="provided->default"/> -->
+
+    <dependency org="org.owasp.esapi" name="esapi" rev="${dependency.esapi.revision}" conf="test->default"/>    
+
+    <dependency org="org.mockito"              name="mockito-all"          rev="${dependency.mockito.revision}"  transitive="false" conf="test->default"/>
+    <dependency org="pentaho-kettle" name="kettle-engine-test" rev="${dependency.kettle.revision}" transitive="false" conf="test->default" />    
+    <dependency org="junit" name="junit" rev="${dependency.junit.revision}" conf="test->default" />
+    <dependency org="commons-logging" name="commons-logging" rev="${dependency.commons.logging.revision}" conf="test->default"/>
+    <dependency org="javax.servlet"                    name="servlet-api"          rev="${dependency.servlet.api.revision}"             transitive="false" conf="test->default"/>    
+  </dependencies>
+</ivy-module>

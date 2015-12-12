@@ -1,0 +1,99 @@
+<!--===========================================================================
+  This is the build file for the Pentaho Cassandra Project
+  
+  This build file will use the subfloor.xml file as the default build
+  process and should only override the tasks that need to differ from
+  the common build file.
+  
+  See subfloor.xml for more details
+============================================================================-->
+<project name="Pentaho CPython Plugin" basedir="." default="dist"
+	xmlns:ivy="antlib:org.apache.ivy.ant" >
+
+  <property name="bin.dir" value="${basedir}/bin"/>
+  <property name="stage.dir" value="${bin.dir}/stage"/>
+  <property name="approot.stage.dir" value="${stage.dir}/pentaho-cpython"/>
+  <property name="lib.provided.dir" value="${basedir}/lib-provided" />
+  <property name="provided.lib.dir" value="${basedir}/lib-provided" />
+	
+	<description>
+	  This build file is used to create the Pentaho CPython Script Executor  project
+		and works with the subfloor.xml file.
+	</description>
+
+	<!-- Import the common_build.xml file which contains all the default tasks -->	
+	<import file="build-res/subfloor-pkg.xml"/>
+
+  <!--
+    AS STATED ABOVE, THE ONLY TASKS THAT SHOULD EXIST IN THIS BUILD FILE ARE
+    THE TASKS THAT NEED TO DIFFER FROM THE DEFAULT IMPLEMENTATION OF THE TASKS
+    FOUND IN subfloor.xml.
+  --> 
+
+  <path id="classpath">
+    <fileset dir="${lib.dir}">
+      <include name="**/*.jar" />
+    </fileset>
+    <fileset dir="${lib.provided.dir}">
+      <include name="**/*.jar" />
+    </fileset>
+  </path>
+
+  <!-- Setup the classpath used for testing -->
+  <path id="test.classpath">
+    <pathelement path="${testclasses.dir}" />
+    <pathelement path="${classes.dir}" />
+    <fileset dir="${devlib.dir}">
+      <include name="**/*.jar" />
+    </fileset>
+    <fileset dir="${testlib.dir}">
+      <include name="**/*.jar" />
+    </fileset>
+    <fileset dir="${lib.dir}">
+      <include name="**/*.jar" />
+    </fileset>
+    <fileset dir="${provided.lib.dir}">
+      <include name="**/*.jar" />
+    </fileset>
+  </path>
+
+  <target name="clean-jars" depends="subfloor.clean-jars">
+    <delete dir="${swt.lib.dir}"/>
+    <delete dir="${provided.lib.dir}"/>
+  </target>
+
+
+  <target name="jar"
+          depends="jar.main,jar.test"
+          description="Jars up the bin directory after a compile">
+  </target>
+
+  <target name="jar.main"
+          depends="compile,set-build.id,generate.manifest">
+    <copy todir="${classes.dir}">
+      <fileset dir="./resources"/>
+    </copy>
+    <jar destfile="${dist.dir}/${ivy.artifact.id}-${project.revision}.jar" manifest="${dist.manifest.file}">
+      <fileset dir="${classes.dir}"/>
+    </jar>
+  </target>
+
+  <target name="resolve" depends="subfloor.resolve">
+    <ivy:resolve file="${ivyfile}" conf="provided" />
+    <ivy:retrieve conf="provided" pattern="${provided.lib.dir}/[module]-[revision](-[classifier]).[ext]" symlink="${ivy.use.symlinks.internal}" /> 
+  </target>
+
+  <target name="clean-all" depends="subfloor.clean-all">
+    <delete dir="${lib.provided.dir}" />
+  </target>  
+
+  <target name="assemble.copy-libs" depends="subfloor-pkg.assemble.copy-libs">
+    <move file="${approot.stage.dir}/lib/${ivy.artifact.id}-${project.revision}.jar" tofile="${approot.stage.dir}/${ivy.artifact.id}-${project.revision}.jar"/>
+  </target>
+
+  <target name="assemble" depends="subfloor-pkg.assemble">
+    <delete>
+      <fileset dir="${approot.stage.dir}" includes="**/.gitignore"/>
+    </delete>
+  </target>	
+</project>

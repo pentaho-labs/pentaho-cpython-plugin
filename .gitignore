@@ -1,0 +1,6 @@
+test-lib
+lib-provided
+lib
+dist
+bin
+.DS_Store
