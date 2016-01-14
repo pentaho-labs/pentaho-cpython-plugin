@@ -29,7 +29,6 @@ explicitly covering such access.
     <conf name="source" />
     <conf name="zip" />
     <conf name="provided" />
-    <conf name="obf" />
   </configurations>
 
   <publications>
