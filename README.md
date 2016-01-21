@@ -7,7 +7,7 @@ Building
 --------
 The Pentaho CPython Plugin is built with Apache Ant and uses Apache Ivy for dependency management. All you'll need to get started is Ant 1.7.0 or newer to build the project. The build scripts will download Ivy if you do not already have it installed.
 
-    $ git clone git://github.com/pentaho/pentaho-cpython-plugin.git
+    $ git clone https://github.com/pentaho-labs/pentaho-cpython-plugin.git
     $ cd pentaho-cpython-plugin
     $ ant resolve dist
 
