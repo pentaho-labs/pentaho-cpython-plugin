@@ -63,9 +63,8 @@ import java.util.List;
  *
  * @author Mark Hall (mhall{[at]}pentaho{[dot]}com)
  */
-@Step( id = "CPythonScriptExecutor", image = "pylogo.png", name = "CPython Script Executor", description = "Executes a python script",
-    categoryDescription = "Statistics" ) public class CPythonScriptExecutorMeta extends BaseStepMeta
-    implements StepMetaInterface {
+@Step( id = "CPythonScriptExecutor", image = "pylogo.png", name = "CPython Script Executor", description = "Executes a python script", categoryDescription = "Statistics" )
+public class CPythonScriptExecutorMeta extends BaseStepMeta implements StepMetaInterface {
 
   private static Class<?> PKG = CPythonScriptExecutor.class;
 
@@ -458,6 +457,20 @@ import java.util.List;
     rowMeta.clear();
     if ( m_outputFields != null && m_outputFields.size() > 0 ) {
       rowMeta.addRowMeta( m_outputFields );
+
+      // Check across all input fields to see if they are in the output, and
+      // whether they are binary storage. If binary storage then copy over the original input value meta
+      // (this is because get fields in the dialog just creates new ValueMetas without knowledge of storage type)
+      for ( RowMetaInterface r : info ) {
+        if ( r != null ) {
+          for ( ValueMetaInterface vm : r.getValueMetaList() ) {
+            int outIndex = m_outputFields.indexOfValue( vm.getName() );
+            if ( outIndex >= 0 && vm.isStorageBinaryString() ) {
+              m_outputFields.setValueMeta( outIndex, vm );
+            }
+          }
+        }
+      }
     } else {
       int numRowMetas = 0;
       for ( RowMetaInterface r : info ) {
@@ -736,7 +749,7 @@ import java.util.List;
         try {
           ValueMetaInterface vm = ValueMetaFactory.createValueMeta( name, ValueMetaFactory.getIdForValueMeta( type ) );
           m_outputFields.addValueMeta( vm );
-        } catch (KettlePluginException ex) {
+        } catch ( KettlePluginException ex ) {
           throw new KettleXMLException( ex );
         }
       }
