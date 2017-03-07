@@ -26,6 +26,7 @@ import traceback
 import pandas as pd
 import matplotlib
 import matplotlib.pyplot as plt
+import csv
 
 _global_python3 = sys.version_info >= (3, 0)
 
@@ -180,7 +181,7 @@ def send_rows(message):
     send_response(response, True)
     s = StringIO()
     frame.to_csv(path_or_buf=s, na_rep='?', doublequote=False, index=include_index,
-                 quotechar='\'',
+                 quotechar='\'', line_terminator='#||#', quoting=csv.QUOTE_NONNUMERIC,
                  escapechar='\\', header=False, date_format='%Y-%m-%d %H:%M:%S.%f')
     send_response(s.getvalue(), False)
 
@@ -219,7 +220,7 @@ def send_response(response, isJson):
         response = json.dumps(response)
 
     if _global_python3 is True:
-        _global_connection.sendall(struct.pack('>L', len(response)))
+        _global_connection.sendall(struct.pack('>L', len(response.encode('utf-8'))))
         _global_connection.sendall(response.encode('utf-8'))
     else:
         _global_connection.sendall(struct.pack('>L', len(response)))
