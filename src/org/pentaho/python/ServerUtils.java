@@ -27,6 +27,7 @@ import org.apache.commons.codec.binary.Base64;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.pentaho.di.core.Const;
 import org.pentaho.di.core.exception.KettleException;
+import org.pentaho.di.core.exception.KettleValueException;
 import org.pentaho.di.core.logging.LogChannelInterface;
 import org.pentaho.di.core.row.RowMeta;
 import org.pentaho.di.core.row.RowMetaInterface;
@@ -646,14 +647,7 @@ public class ServerUtils {
     return rowMeta;
   }
 
-  /**
-   * Convert rows of kettle data to a csv string
-   *
-   * @param meta the metadata of the rows
-   * @param rows the rows of data
-   * @return csv data stored in a StringBuilder
-   */
-  protected static StringBuilder rowsToCSV( RowMetaInterface meta, List<Object[]> rows ) {
+  protected static StringBuilder rowsToCSV( RowMetaInterface meta, List<Object[]> rows ) throws KettleValueException {
     StringBuilder builder = new StringBuilder();
     // header row
     int i = 0;
@@ -666,32 +660,32 @@ public class ServerUtils {
     for ( Object[] row : rows ) {
       for ( i = 0; i < row.length; i++ ) {
         String value;
-        if ( row[i] == null || Const.isEmpty( row[i].toString() ) ) {
+        ValueMetaInterface vm = meta.getValueMeta( i );
+        if ( row[i] == null || Const.isEmpty( vm.getString( row[i] ) ) ) {
           value = "?";
         } else {
-          switch ( meta.getValueMetaList().get( i ).getType() ) {
+          //switch ( meta.getValueMetaList().get( i ).getType() ) {
+          switch ( vm.getType() ) {
             case ValueMetaInterface.TYPE_NUMBER:
             case ValueMetaInterface.TYPE_INTEGER:
             case ValueMetaInterface.TYPE_BIGNUMBER:
-              value = row[i].toString();
+              value = vm.getString( row[i] );
               break;
             case ValueMetaInterface.TYPE_DATE:
-              value = "" + ( (Date) row[i] ).getTime();
+              value = "" + vm.getDate( row[i] ).getTime();
               break;
             case ValueMetaInterface.TYPE_TIMESTAMP:
-              value = "" + ( (Timestamp) row[i] ).getTime();
+              value = "" + vm.getDate( row[i] ).getTime();
               break;
             case ValueMetaInterface.TYPE_BOOLEAN:
-              value = "" + ( ( (Boolean) row[i] ) ? "1" : "0" );
+              value = "" + ( vm.getBoolean( row[i] ) ? "1" : "0" );
               break;
             // TODO throw an exception for Serializable/Binary
             default:
-              value = quote( row[i].toString() );
-          }
-          builder.append( i > 0 ? "," : "" ).append( value );
+              value = quote( vm.getString( row[i] ) );
+          } builder.append( i > 0 ? "," : "" ).append( value );
         }
-      }
-      builder.append( "\n" );
+      } builder.append( "\n" );
     }
 
     return builder;
