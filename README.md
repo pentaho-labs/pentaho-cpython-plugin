@@ -1,7 +1,7 @@
 Pentaho CPython Plugin
 =======================
 
-The Pentaho R CPython Project is a plugin for the Pentaho Kettle engine which provides the ability to execute a python script (via the cpython environment) within the context of a transformation.
+The Pentaho CPython Project is a plugin for the Pentaho Kettle engine which provides the ability to execute a python script (via the cpython environment) within the context of a transformation.
 
 Building
 --------
