@@ -461,12 +461,14 @@ public class CPythonScriptExecutorMeta extends BaseStepMeta implements StepMetaI
       // Check across all input fields to see if they are in the output, and
       // whether they are binary storage. If binary storage then copy over the original input value meta
       // (this is because get fields in the dialog just creates new ValueMetas without knowledge of storage type)
-      for ( RowMetaInterface r : info ) {
-        if ( r != null ) {
-          for ( ValueMetaInterface vm : r.getValueMetaList() ) {
-            int outIndex = m_outputFields.indexOfValue( vm.getName() );
-            if ( outIndex >= 0 && vm.isStorageBinaryString() ) {
-              m_outputFields.setValueMeta( outIndex, vm );
+      if ( getIncludeInputAsOutput() ) {
+        for ( RowMetaInterface r : info ) {
+          if ( r != null ) {
+            for ( ValueMetaInterface vm : r.getValueMetaList() ) {
+              int outIndex = m_outputFields.indexOfValue( vm.getName() );
+              if ( outIndex >= 0 ) {
+                m_outputFields.setValueMeta( outIndex, vm );
+              }
             }
           }
         }
