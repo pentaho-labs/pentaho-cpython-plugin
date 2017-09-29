@@ -40,7 +40,6 @@ import org.pentaho.python.PythonSession.RowMetaAndRows;
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.BufferedInputStream;
-import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -48,17 +47,15 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
-import java.io.StringReader;
 import java.io.StringWriter;
 import java.nio.ByteBuffer;
-import java.sql.Timestamp;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TimeZone;
 
 /**
  * Routines for communicating with the python server
@@ -117,6 +114,12 @@ public class ServerUtils {
    * For parsing CSV rows from python
    */
   protected static final CSVParser PARSER = new CSVParser( ',', '\'', '\\' );
+
+  /**
+   * Local time zone offset from UTC. Python converts millis since epoch into UTC-centered dates, unlike Java which
+   * takes the current timezone into account by default
+   */
+  protected static TimeZone TZ = TimeZone.getDefault();
 
   /**
    * For parsing dates out of CSV returned from python
@@ -565,9 +568,9 @@ public class ServerUtils {
     rowMetaAndRows.m_rows = new Object[numRows][];
     int count = 0;
     // use a foreign line ending so that we can still have cr/lf in text cells
-    for(String line: csv.split("#\\|\\|#")){
+    for ( String line : csv.split( "#\\|\\|#" ) ) {
       // stash cr and lf so that they don't break the parser
-      line = line.replace("\n", "<lf>").replace("\r", "<cr>");
+      line = line.replace( "\n", "<lf>" ).replace( "\r", "<cr>" );
       String[] parsed = PARSER.parseLine( line );
 
       Object[] row = new Object[kettleMeta.size()];
@@ -595,7 +598,7 @@ public class ServerUtils {
             break;
           default:
             // unpack stashed cr lf 
-            row[i] = parsed[i].replace("<lf>", "\n").replace("<cr>", "\r");
+            row[i] = parsed[i].replace( "<lf>", "\n" ).replace( "<cr>", "\r" );
         }
       }
       rowMetaAndRows.m_rows[count++] = row;
@@ -672,10 +675,12 @@ public class ServerUtils {
               value = vm.getString( row[i] );
               break;
             case ValueMetaInterface.TYPE_DATE:
-              value = "" + vm.getDate( row[i] ).getTime();
+              int offset = TZ.getOffset( vm.getDate( row[i] ).getTime() );
+              value = "" + ( vm.getDate( row[i] ).getTime() + offset );
               break;
             case ValueMetaInterface.TYPE_TIMESTAMP:
-              value = "" + vm.getDate( row[i] ).getTime();
+              offset = TZ.getOffset( vm.getDate( row[i] ).getTime() );
+              value = "" + ( vm.getDate( row[i] ).getTime() + offset );
               break;
             case ValueMetaInterface.TYPE_BOOLEAN:
               value = "" + ( vm.getBoolean( row[i] ) ? "1" : "0" );
@@ -683,9 +688,11 @@ public class ServerUtils {
             // TODO throw an exception for Serializable/Binary
             default:
               value = quote( vm.getString( row[i] ) );
-          } builder.append( i > 0 ? "," : "" ).append( value );
+          }
+          builder.append( i > 0 ? "," : "" ).append( value );
         }
-      } builder.append( "\n" );
+      }
+      builder.append( "\n" );
     }
 
     return builder;
