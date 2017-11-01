@@ -792,7 +792,7 @@ public class CPythonScriptExecutorDialog extends BaseStepDialog implements StepD
     if ( wcvRowsToProcessValue.equals( BaseMessages
         .getString( PKG, "CPythonScriptExecutorDialog.NumberOfRowsToProcess.Dropdown.BatchEntry.Label" ) ) ) {
       wtvRowsToProcessSize.setEnabled( true );
-      wtvRowsToProcessSize.setText( m_originalMeta.getRowsToProcessSize() );
+      setItemText( wtvRowsToProcessSize, m_originalMeta.getRowsToProcessSize() );
 
       //reset the other controllers
       wbReservoirSampling.setEnabled( false );
@@ -810,9 +810,9 @@ public class CPythonScriptExecutorDialog extends BaseStepDialog implements StepD
       wbReservoirSampling.setEnabled( true );
       wbReservoirSampling.setSelection( m_originalMeta.getDoingReservoirSampling() );
       wtvReservoirSamplingSize.setEnabled( wbReservoirSampling.getSelection() );
-      wtvReservoirSamplingSize.setText( m_originalMeta.getReservoirSamplingSize() );
+      setItemText( wtvReservoirSamplingSize, m_originalMeta.getReservoirSamplingSize() );
       wtvRandomSeed.setEnabled( m_originalMeta.getDoingReservoirSampling() );
-      wtvRandomSeed.setText( m_originalMeta.getRandomSeed() );
+      wtvRandomSeed.setText( m_originalMeta.getRandomSeed() == null ? "" : m_originalMeta.getRandomSeed());
     } else if ( wcvRowsToProcessValue.equals( BaseMessages
         .getString( PKG, "CPythonScriptExecutorDialog.NumberOfRowsToProcess.Dropdown.RowByRowEntry.Label" ) ) ) {
       wtvRowsToProcessSize.setEnabled( false );
@@ -822,9 +822,9 @@ public class CPythonScriptExecutorDialog extends BaseStepDialog implements StepD
       wbReservoirSampling.setEnabled( true );
       wbReservoirSampling.setSelection( m_originalMeta.getDoingReservoirSampling() );
       wtvReservoirSamplingSize.setEnabled( wbReservoirSampling.getSelection() );
-      wtvReservoirSamplingSize.setText( m_originalMeta.getReservoirSamplingSize() );
+      setItemText(wtvReservoirSamplingSize, m_originalMeta.getReservoirSamplingSize() );
       wtvRandomSeed.setEnabled( m_originalMeta.getDoingReservoirSampling() );
-      wtvRandomSeed.setText( m_originalMeta.getRandomSeed() );
+      setItemText( wtvRandomSeed, m_originalMeta.getRandomSeed() );
     }
   }
 
@@ -880,16 +880,16 @@ public class CPythonScriptExecutorDialog extends BaseStepDialog implements StepD
 
   protected void getData( CPythonScriptExecutorMeta meta ) {
     wcvRowsToProcess.setText( meta.getRowsToProcess() );
-    wtvRowsToProcessSize.setText( meta.getRowsToProcessSize() );
+    setItemText( wtvRowsToProcessSize, meta.getRowsToProcessSize() );
     wbReservoirSampling.setSelection( meta.getDoingReservoirSampling() );
-    wtvReservoirSamplingSize.setText( meta.getReservoirSamplingSize() );
-    wtvRandomSeed.setText( meta.getRandomSeed() );
+    setItemText( wtvReservoirSamplingSize, meta.getReservoirSamplingSize() );
+    setItemText( wtvRandomSeed, meta.getRandomSeed());
     wbIncludeInputAsOutput.setSelection( meta.getIncludeInputAsOutput() );
-    wtvPyVarsToGet.setText( listToString( meta.getPythonVariablesToGet() ) );
+    setItemText(wtvPyVarsToGet, listToString( meta.getPythonVariablesToGet() ) );
     wbContinueOnUnsetVars.setSelection( meta.getContinueOnUnsetVars() );
     wstcScriptEditor.setText( meta.getScript() == null ? "" : meta.getScript() ); //$NON-NLS-1$
     wbLoadScriptFile.setSelection( meta.getLoadScriptAtRuntime() );
-    wtvScriptLocation.setText( meta.getScriptToLoad() == null ? "" : meta.getScriptToLoad() ); //$NON-NLS-1$
+    setItemText(wtvScriptLocation, meta.getScriptToLoad());
     wbIncludeRowIndex.setSelection( meta.getIncludeFrameRowIndexAsOutputField() );
 
     setInputToFramesTableFields( meta );
@@ -1151,5 +1151,15 @@ public class CPythonScriptExecutorDialog extends BaseStepDialog implements StepD
     fd.top = new FormAttachment( lastControl, MARGIN );
     fd.right = new FormAttachment( SECOND_PROMPT_RIGHT_PERCENTAGE, 0 );
     return fd;
+  }
+
+  /**
+   * SWT TextVar's throw IllegalArgumentExceptions for null.  Defend against this.
+   *
+   * @param item - A TextVar, but could be generalized as needed.
+   * @param value - Value to set
+   */
+  private void setItemText(TextVar item, String value) {
+    item.setText(value == null ? "": value);
   }
 }
