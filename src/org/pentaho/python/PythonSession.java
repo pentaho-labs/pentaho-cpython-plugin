@@ -567,7 +567,7 @@ public class PythonSession {
           // try to kill process, just in case
           ProcessBuilder killer;
           if ( System.getProperty( "os.name" ).toLowerCase().contains( "win" ) ) {
-            killer = new ProcessBuilder( "takskill", "/F", "/PID", "" + m_pythonPID );
+            killer = new ProcessBuilder( "taskkill", "/F", "/PID", "" + m_pythonPID );
           } else {
             killer = new ProcessBuilder( "kill", "-9", "" + m_pythonPID );
           }
