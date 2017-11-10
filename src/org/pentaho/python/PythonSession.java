@@ -55,6 +55,18 @@ import java.util.List;
  */
 public class PythonSession {
 
+  /**
+   * Java property to specify full path to python command. If not set (and env var not set), we assume 'python' is in
+   * the PATH. Takes precedence over the env var.
+   */
+  public static final String CPYTHON_COMMAND_PROPERTY_KEY = "pentaho.cpython.command";
+
+  /**
+   * System environment variable to specify full path to python command. If not set (and java prop is not set), we
+   * assume 'python' is in the PATH.
+   */
+  public static final String CPYTHON_COMMAND_ENV_VAR_KEY = "PENTAHO_CPYTHON_COMMAND";
+
   public static enum PythonVariableType {
     DataFrame, Image, String, Unknown;
   }
@@ -344,7 +356,9 @@ public class PythonSession {
 
   /**
    * Initialize the session. This needs to be called exactly once in order to
-   * run checks and launch the server. Creates a session singleton.
+   * run checks and launch the server. Creates a session singleton. Assumes python
+   * is in the PATH; alternatively, can specify full path to python exe via the java
+   * property or system environment variable pentaho.cpython.command.
    *
    * @param pythonCommand the python command
    * @return true if the server launched successfully
@@ -352,6 +366,12 @@ public class PythonSession {
    *                         or python could not be started for some reason
    */
   public static synchronized boolean initSession( String pythonCommand ) throws KettleException {
+    if ( System.getProperty( CPYTHON_COMMAND_PROPERTY_KEY ) != null ) {
+      pythonCommand = System.getProperty( CPYTHON_COMMAND_PROPERTY_KEY );
+    } else if ( System.getenv( CPYTHON_COMMAND_ENV_VAR_KEY ) != null ) {
+      pythonCommand = System.getenv( CPYTHON_COMMAND_ENV_VAR_KEY );
+    }
+
     if ( s_sessionSingleton != null ) {
       return true;
       // throw new KettleException( BaseMessages.getString( ServerUtils.PKG, "PythonSession.Error.EnvAlreadyAvailable" ) );
@@ -606,15 +626,15 @@ public class PythonSession {
       //rowMeta.addValueMeta( new ValueMeta( "Field2", ValueMetaInterface.TYPE_NUMBER ) );
       rowMeta.addValueMeta( ValueMetaFactory.createValueMeta( "Field2", ValueMetaInterface.TYPE_NUMBER ) );
       // rowMeta.addValueMeta( new ValueMeta( "Field3", ValueMetaInterface.TYPE_STRING ) );
-      rowMeta.addValueMeta( ValueMetaFactory.createValueMeta( "Field3", ValueMetaInterface.TYPE_STRING ));
+      rowMeta.addValueMeta( ValueMetaFactory.createValueMeta( "Field3", ValueMetaInterface.TYPE_STRING ) );
       // rowMeta.addValueMeta( new ValueMeta( "Field4", ValueMetaInterface.TYPE_BOOLEAN ) );
-      rowMeta.addValueMeta( ValueMetaFactory.createValueMeta( "Field4", ValueMetaInterface.TYPE_BOOLEAN ));
+      rowMeta.addValueMeta( ValueMetaFactory.createValueMeta( "Field4", ValueMetaInterface.TYPE_BOOLEAN ) );
       // rowMeta.addValueMeta( new ValueMeta( "Field5", ValueMetaInterface.TYPE_DATE ) );
       rowMeta.addValueMeta( ValueMetaFactory.createValueMeta( "Field5", ValueMetaInterface.TYPE_DATE ) );
       // rowMeta.addValueMeta( new ValueMeta( "Field6", ValueMetaInterface.TYPE_TIMESTAMP ) );
       rowMeta.addValueMeta( ValueMetaFactory.createValueMeta( "Field6", ValueMetaInterface.TYPE_TIMESTAMP ) );
       // rowMeta.addValueMeta( new ValueMeta( "NullField", ValueMetaInterface.TYPE_STRING ) );
-      rowMeta.addValueMeta( ValueMetaFactory.createValueMeta( "NullField", ValueMetaInterface.TYPE_STRING ));
+      rowMeta.addValueMeta( ValueMetaFactory.createValueMeta( "NullField", ValueMetaInterface.TYPE_STRING ) );
 
       List<Object[]> data = new ArrayList<Object[]>();
       data.add( rowData );

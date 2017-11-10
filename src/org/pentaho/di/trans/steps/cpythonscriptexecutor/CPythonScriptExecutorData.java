@@ -1,7 +1,7 @@
 /*******************************************************************************
  * Pentaho Data Science
  * <p/>
- * Copyright (C) 2002-2015 by Pentaho : http://www.pentaho.com
+ * Copyright (c) 2002-2017 Hitachi Vantara. All rights reserved.
  * <p/>
  * ******************************************************************************
  * <p/>

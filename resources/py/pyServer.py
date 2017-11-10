@@ -131,10 +131,21 @@ def receive_rows(message):
         row_meta = message['row_meta']
         frame_name = row_meta['frame_name']
         num_rows = message['num_rows']
+        b64e = message['base64'];
         frame = None
         if num_rows > 0:
             # receive the CSV
             csv_data = receive_message(False)
+            if b64e is True:
+                # For some reason decoding byte stream that has been encoded to utf-8 by Java causes
+                # the python decoder to hang when there are non-ascii characters present.
+                # Encoding to base64 on the Java side, then decoding base64 and then
+                # to utf-8 on the python side seems to rectify this. Due to the overhead of base64, we only
+                # do this when non-ascii characters are detected.
+                csv_data = base64_decode(csv_data)
+                if _global_python3 is True:
+                    csv_data = csv_data.decode('utf-8', 'ignore')
+
             frame = pd.read_csv(StringIO(csv_data), na_values='?',
                                 quotechar='\'', escapechar='\\',
                                 index_col=None)
@@ -245,7 +256,7 @@ def receive_message(isJson):
     data = ''
     while len(data) < size:
         if _global_python3 is True:
-            data += _global_connection.recv(size).decode('utf-8');
+            data += _global_connection.recv(size).decode('ascii',"backslashreplace");
         else:
             data += _global_connection.recv(size);
     if isJson is True:

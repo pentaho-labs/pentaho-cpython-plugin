@@ -2,7 +2,7 @@
  *
  * Pentaho Data Science
  *
- * Copyright (C) 2002-2015 by Pentaho : http://www.pentaho.com
+ * Copyright (c) 2002-2017 Hitachi Vantara. All rights reserved.
  *
  *******************************************************************************
  *
@@ -40,15 +40,16 @@ import org.pentaho.python.PythonSession.RowMetaAndRows;
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.BufferedInputStream;
-import java.io.BufferedWriter;
+import java.io.BufferedOutputStream;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.OutputStreamWriter;
 import java.io.StringWriter;
 import java.nio.ByteBuffer;
+import java.nio.charset.Charset;
+import java.nio.charset.CharsetEncoder;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -132,9 +133,28 @@ public class ServerUtils {
     List<Map<String, String>> fields = new ArrayList<Map<String, String>>();
 
     result.put( FIELDS_KEY, fields );
+
+    CharsetEncoder encoder = Charset.forName( "US-ASCII" ).newEncoder();
+    Charset utf8 = Charset.forName( "UTF-8" );
+    boolean needsBase64 = false;
+
+    for ( ValueMetaInterface v : meta.getValueMetaList() ) {
+      if ( !encoder.canEncode( v.getName() ) ) {
+        needsBase64 = true;
+        break;
+      }
+    }
+
+    result.put( BASE64_ENCODING_KEY, needsBase64 );
+
     for ( ValueMetaInterface v : meta.getValueMetaList() ) {
       Map<String, String> fieldMeta = new HashMap<String, String>();
-      fieldMeta.put( FIELD_NAME_KEY, v.getName() );
+      String fieldName = v.getName();
+      if ( needsBase64 ) {
+        byte[] encodedName = Base64.encodeBase64( fieldName.getBytes( Charset.forName( "UTF-8" ) ) );
+        fieldName = new String( encodedName );
+      }
+      fieldMeta.put( FIELD_NAME_KEY, fieldName );
       switch ( v.getType() ) {
         case ValueMetaInterface.TYPE_NUMBER:
         case ValueMetaInterface.TYPE_INTEGER:
@@ -438,8 +458,20 @@ public class ServerUtils {
     command.put( ROW_META_KEY, metaData );
     command.put( DEBUG_KEY, debug );
 
+    boolean needsBase64 = (boolean) metaData.get( BASE64_ENCODING_KEY );
+    command.put( BASE64_ENCODING_KEY, needsBase64 );
+    metaData.remove( BASE64_ENCODING_KEY );
+
     if ( inputStream != null && outputStream != null ) {
       try {
+        List<Object> rowsInfo = rowsToCSVNew( meta, rows );
+
+        // unfortunately we'll incur the base 64 transcoding overhead even if it
+        // is only the header row that needs it.
+        if ( !needsBase64 ) {
+          command.put( BASE64_ENCODING_KEY, (boolean) rowsInfo.get( 1 ) );
+        }
+
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         mapper.writeValue( bos, command );
         byte[] bytes = bos.toByteArray();
@@ -456,14 +488,26 @@ public class ServerUtils {
           if ( log != null && debug ) {
             log.logDebug( "Sending CSV data..." );
           }
-          bos = new ByteArrayOutputStream();
-          BufferedWriter bw = new BufferedWriter( new OutputStreamWriter( bos ) );
+
+          writeDelimitedToOutputStream( (byte[]) rowsInfo.get( 0 ), outputStream );
+
+          /* // bos = new ByteArrayOutputStream();
+          // BufferedWriter bw = new BufferedWriter( new OutputStreamWriter( bos ) );
           StringBuilder csv = rowsToCSV( meta, rows );
-          bw.write( csv.toString() );
-          bw.flush();
-          bw.close();
-          bytes = bos.toByteArray();
-          writeDelimitedToOutputStream( bytes, outputStream );
+          Charset utf8 = Charset.forName( "UTF-8" );
+          ByteBuffer
+              bb =
+              utf8.newEncoder().onUnmappableCharacter( CodingErrorAction.IGNORE )
+                  .onMalformedInput( CodingErrorAction.IGNORE ).encode( CharBuffer.wrap( csv.toString() ) );
+          // byte[] ptext = csv.toString().getBytes( Charset.forName( "UTF-8" ) );
+          System.out.println( csv.toString() );
+          System.out.println( "-----------------" );
+          // bw.write( csv.toString() );
+          // bw.flush();
+          // bw.close();
+          // bytes = bos.toByteArray();
+          // writeDelimitedToOutputStream( bytes, outputStream );
+          writeDelimitedToOutputStream( bb.array(), outputStream ); */
         }
 
         String serverAck = receiveServerAck( inputStream );
@@ -541,7 +585,7 @@ public class ServerUtils {
         int numRows = (Integer) headerResponse.get( NUM_ROWS_KEY );
 
         bytes = readDelimitedFromInputStream( inputStream );
-        String csv = new String( bytes );
+        String csv = new String( bytes, Charset.forName( "UTF-8" ) );
         result = csvToRows( csv, convertedMeta, numRows );
       } catch ( IOException ex ) {
         throw new KettleException( ex );
@@ -650,6 +694,90 @@ public class ServerUtils {
     return rowMeta;
   }
 
+  protected static List<Object> rowsToCSVNew( RowMetaInterface meta, List<Object[]> rows ) throws KettleException {
+    List<Object> results = new ArrayList<>( 2 );
+    boolean needsBase64;
+    CharsetEncoder encoder = Charset.forName( "US-ASCII" ).newEncoder();
+    Charset utf8 = Charset.forName( "UTF-8" );
+
+    ByteArrayOutputStream bos = new ByteArrayOutputStream();
+    BufferedOutputStream buf = new BufferedOutputStream( bos );
+
+    // header row
+    StringBuilder builder = new StringBuilder();
+    int i = 0;
+    for ( ValueMetaInterface v : meta.getValueMetaList() ) {
+      String name = quote( v.getName() );
+      builder.append( i > 0 ? "," : "" ).append( name );
+      i++;
+    }
+    builder.append( "\n" );
+
+    // We look for non-ascii characters and, if found, encode to ascii base64 first. For some reason,
+    // encoding directly to utf-8 on the Java side (Mac OS X; Java 8) causes the python utf-8 decoder to hang
+    // when there are non-ascii characters (such as in Mayagüez) present. Encoding to base64 first, then decoding
+    // this on the python side seems to fix the issue.
+    needsBase64 = !encoder.canEncode( builder.toString() );
+    try {
+      buf.write( builder.toString().getBytes( utf8 ) );
+
+      for ( Object[] row : rows ) {
+        builder.setLength( 0 );
+        for ( i = 0; i < meta.size(); i++ ) {
+          String value;
+          ValueMetaInterface vm = meta.getValueMeta( i );
+          if ( row[i] == null || Const.isEmpty( vm.getString( row[i] ) ) ) {
+            value = "?";
+          } else {
+            //switch ( meta.getValueMetaList().get( i ).getType() ) {
+            switch ( vm.getType() ) {
+              case ValueMetaInterface.TYPE_NUMBER:
+              case ValueMetaInterface.TYPE_INTEGER:
+              case ValueMetaInterface.TYPE_BIGNUMBER:
+                value = vm.getString( row[i] );
+                break;
+              case ValueMetaInterface.TYPE_DATE:
+                int offset = TZ.getOffset( vm.getDate( row[i] ).getTime() );
+                value = "" + ( vm.getDate( row[i] ).getTime() + offset );
+                break;
+              case ValueMetaInterface.TYPE_TIMESTAMP:
+                offset = TZ.getOffset( vm.getDate( row[i] ).getTime() );
+                value = "" + ( vm.getDate( row[i] ).getTime() + offset );
+                break;
+              case ValueMetaInterface.TYPE_BOOLEAN:
+                value = "" + ( vm.getBoolean( row[i] ) ? "1" : "0" );
+                break;
+              // TODO throw an exception for Serializable/Binary
+              default:
+                value = quote( vm.getString( row[i] ) );
+            }
+          }
+          builder.append( i > 0 ? "," : "" ).append( value );
+        }
+        builder.append( "\n" );
+
+        if ( !needsBase64 ) {
+          needsBase64 = !encoder.canEncode( builder.toString() );
+        }
+        buf.write( builder.toString().getBytes( utf8 ) );
+      }
+
+      buf.flush();
+      buf.close();
+    } catch ( IOException e ) {
+      throw new KettleException( e );
+    }
+
+    byte[] bytes = bos.toByteArray();
+    if ( needsBase64 ) {
+      bytes = Base64.encodeBase64( bytes );
+    }
+    results.add( bytes );
+    results.add( needsBase64 );
+
+    return results;
+  }
+
   protected static StringBuilder rowsToCSV( RowMetaInterface meta, List<Object[]> rows ) throws KettleValueException {
     StringBuilder builder = new StringBuilder();
     // header row
@@ -661,7 +789,7 @@ public class ServerUtils {
     }
     builder.append( "\n" );
     for ( Object[] row : rows ) {
-      for ( i = 0; i < row.length; i++ ) {
+      for ( i = 0; i < meta.size(); i++ ) {
         String value;
         ValueMetaInterface vm = meta.getValueMeta( i );
         if ( row[i] == null || Const.isEmpty( vm.getString( row[i] ) ) ) {
@@ -689,8 +817,8 @@ public class ServerUtils {
             default:
               value = quote( vm.getString( row[i] ) );
           }
-          builder.append( i > 0 ? "," : "" ).append( value );
         }
+        builder.append( i > 0 ? "," : "" ).append( value );
       }
       builder.append( "\n" );
     }
