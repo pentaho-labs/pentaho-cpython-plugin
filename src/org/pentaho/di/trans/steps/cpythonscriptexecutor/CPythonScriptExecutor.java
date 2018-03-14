@@ -109,7 +109,7 @@ public class CPythonScriptExecutor extends BaseStep implements StepInterface {
         }
 
         // check python availability
-        CPythonScriptExecutorData.initPython();
+        CPythonScriptExecutorData.initPython(this, log);
       } catch ( KettleException ex ) {
         logError( ex.getMessage(), ex ); //$NON-NLS-1$
 
@@ -272,7 +272,7 @@ public class CPythonScriptExecutor extends BaseStep implements StepInterface {
                 .getString( PKG, "CPythonScriptExecutor.Message.PushingBatchIntoPandasDataFrame", //$NON-NLS-1$
                     frameBuffer.size(), frameName ) );
 
-            session = CPythonScriptExecutorData.acquirePySession( this, getLogChannel() );
+            session = CPythonScriptExecutorData.acquirePySession( this, getLogChannel(), this );
             rowsToPyDataFrame( session, m_data.m_incomingRowSets.get( i ).getRowMeta(), frameBuffer, frameName );
             framesAdded = true;
           } else {
@@ -289,7 +289,7 @@ public class CPythonScriptExecutor extends BaseStep implements StepInterface {
         }
       } else if ( !m_noInputRowSets && allDone ) {
         boolean framesAdded = false;
-        session = CPythonScriptExecutorData.acquirePySession( this, getLogChannel() );
+        session = CPythonScriptExecutorData.acquirePySession( this, getLogChannel(), this );
 
         // grab all the reservoirs an push to python; then process result
         logDetailed( BaseMessages.getString( PKG, "CPythonScriptExecutor.Message.RetrievingReservoirs" ) );
@@ -310,7 +310,7 @@ public class CPythonScriptExecutor extends BaseStep implements StepInterface {
               List<Object[]> sampleSpliced = new ArrayList<Object[]>();
               for ( int k = 0; k < sample.size(); k++ ) {
                 Object[] objects = sample.get( k );
-                session = CPythonScriptExecutorData.acquirePySession( this, getLogChannel() );
+                session = CPythonScriptExecutorData.acquirePySession( this, getLogChannel(), this );
                 sampleSpliced.clear();
                 sampleSpliced.add( objects );
                 rowsToPyDataFrame( session, m_data.m_incomingRowSets.get( j ).getRowMeta(), sampleSpliced, frameName );
@@ -334,7 +334,7 @@ public class CPythonScriptExecutor extends BaseStep implements StepInterface {
         }
       } else if ( m_noInputRowSets ) {
         // just get results from script as we have no inputs to us
-        session = CPythonScriptExecutorData.acquirePySession( this, getLogChannel() );
+        session = CPythonScriptExecutorData.acquirePySession( this, getLogChannel(), this );
         executeScriptAndProcessResult( session, m_meta.getContinueOnUnsetVars() );
       }
     } finally {
