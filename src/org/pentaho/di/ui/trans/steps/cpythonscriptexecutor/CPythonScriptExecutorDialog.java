@@ -205,7 +205,7 @@ public class CPythonScriptExecutorDialog extends BaseStepDialog implements StepD
     addConfigureTab();
     addScriptTab();
     addFieldsTab();
-    checkPython();
+    // checkPython();
 
     fd = new FormData();
     fd.left = new FormAttachment( 0, 0 );
@@ -267,7 +267,7 @@ public class CPythonScriptExecutorDialog extends BaseStepDialog implements StepD
     if ( !PythonSession.pythonAvailable() ) {
       // try initializing
       try {
-        if ( !PythonSession.initSession( "python" ) ) {
+        if ( !PythonSession.initSession( "python", transMeta, log ) ) {
           String envEvalResults = PythonSession.getPythonEnvCheckResults();
           logError(
               "Was unable to start the python environment:\n\n" + ( envEvalResults != null ? envEvalResults : "" ) );

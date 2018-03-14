@@ -23,12 +23,14 @@
 package org.pentaho.python;
 
 import org.apache.commons.io.IOUtils;
+import org.pentaho.di.core.Const;
 import org.pentaho.di.core.exception.KettleException;
 import org.pentaho.di.core.logging.LogChannelInterface;
 import org.pentaho.di.core.row.RowMeta;
 import org.pentaho.di.core.row.RowMetaInterface;
 import org.pentaho.di.core.row.ValueMetaInterface;
 import org.pentaho.di.core.row.value.ValueMetaFactory;
+import org.pentaho.di.core.variables.VariableSpace;
 import org.pentaho.di.i18n.BaseMessages;
 
 import java.awt.image.BufferedImage;
@@ -54,6 +56,12 @@ import java.util.List;
  * @author Mark Hall (mhall{[at]}pentaho{[dot]}com)
  */
 public class PythonSession {
+
+  /**
+   * Kettle variable key to specify the full path to the python command. Takes precedence over both the java
+   * property and the system evnironment variable
+   */
+  public static final String KETTLE_CPYTHON_COMMAND_PROPERTY_KEY = "pdi.cpython.command";
 
   /**
    * Java property to specify full path to python command. If not set (and env var not set), we assume 'python' is in
@@ -184,6 +192,7 @@ public class PythonSession {
     }
 
     String tmpDir = System.getProperty( "java.io.tmpdir" );
+    // System.err.println( "******* System tmp dir: " + tmpDir );
     File tempDir = new File( tmpDir );
     String pyCheckDest = tmpDir + File.separator + "pyCheck.py";
     String pyServerDest = tmpDir + File.separator + "pyServer.py";
@@ -207,6 +216,9 @@ public class PythonSession {
       while ( ( line = inR.readLine() ) != null ) {
         outW.println( line );
       }
+    } catch ( IOException ex ) {
+      ex.printStackTrace();
+      throw ex;
     } finally {
       if ( outW != null ) {
         outW.flush();
@@ -361,22 +373,45 @@ public class PythonSession {
    * property or system environment variable pentaho.cpython.command.
    *
    * @param pythonCommand the python command
+   * @param vars          Kettle variables
+   * @param log           logging
    * @return true if the server launched successfully
    * @throws KettleException if there was a problem - missing packages in python,
    *                         or python could not be started for some reason
    */
-  public static synchronized boolean initSession( String pythonCommand ) throws KettleException {
-    if ( System.getProperty( CPYTHON_COMMAND_PROPERTY_KEY ) != null ) {
-      pythonCommand = System.getProperty( CPYTHON_COMMAND_PROPERTY_KEY );
-    } else if ( System.getenv( CPYTHON_COMMAND_ENV_VAR_KEY ) != null ) {
-      pythonCommand = System.getenv( CPYTHON_COMMAND_ENV_VAR_KEY );
-    }
+  public static synchronized boolean initSession( String pythonCommand, VariableSpace vars, LogChannelInterface log )
+      throws KettleException {
 
     if ( s_sessionSingleton != null ) {
       return true;
       // throw new KettleException( BaseMessages.getString( ServerUtils.PKG, "PythonSession.Error.EnvAlreadyAvailable" ) );
     }
 
+    if ( vars != null && !Const.isEmpty( vars.getVariable( KETTLE_CPYTHON_COMMAND_PROPERTY_KEY ) ) ) {
+      pythonCommand = vars.getVariable( KETTLE_CPYTHON_COMMAND_PROPERTY_KEY );
+      File pyExe = new File( pythonCommand );
+      if ( !pyExe.exists() || !pyExe.isFile() ) {
+        throw new KettleException( "Python exe: " + pythonCommand + " does not seem to exist on the " + "filesystem!" );
+      }
+    } else if ( System.getProperty( CPYTHON_COMMAND_PROPERTY_KEY ) != null ) {
+      pythonCommand = System.getProperty( CPYTHON_COMMAND_PROPERTY_KEY );
+      File pyExe = new File( pythonCommand );
+      if ( !pyExe.exists() || !pyExe.isFile() ) {
+        throw new KettleException( "Python exe: " + pythonCommand + " does not seem to exist on the " + "filesystem!" );
+      }
+    } else if ( System.getenv( CPYTHON_COMMAND_ENV_VAR_KEY ) != null ) {
+      pythonCommand = System.getenv( CPYTHON_COMMAND_ENV_VAR_KEY );
+      File pyExe = new File( pythonCommand );
+      if ( !pyExe.exists() || !pyExe.isFile() ) {
+        throw new KettleException( "Python exe: " + pythonCommand + " does not seem to exist on the " + "filesystem!" );
+      }
+    }
+
+    log.logDebug( "Python command: " + pythonCommand );
+    String path = System.getenv( "PATH" );
+    if ( path != null && path.length() > 0 ) {
+      log.logDebug( "PATH: " + path );
+    }
     try {
       new PythonSession( pythonCommand );
     } catch ( IOException ex ) {
@@ -611,7 +646,7 @@ public class PythonSession {
 /*      File tmp = PythonSession.installPyScriptsToTmp();
       System.err.println( tmp ); */
 
-      if ( !PythonSession.initSession( "python" ) ) {
+      if ( !PythonSession.initSession( "python", null, null ) ) {
         System.err.print( "Initialization failed!" );
         System.exit( 1 );
       }

@@ -343,10 +343,9 @@ public class CPythonScriptExecutorData extends BaseStepData implements StepDataI
           } else {
             Object varVal = session.getVariableValueFromPythonAsPlainString( v );
             if ( m_outputRowMeta.getValueMeta( outputIndex ).getType() != ValueMetaInterface.TYPE_STRING ) {
-              varVal =
-                  m_outputRowMeta.getValueMeta( outputIndex )
-                      //.convertData( new ValueMeta( v, ValueMetaInterface.TYPE_STRING ), varVal );
-              .convertData(ValueMetaFactory.createValueMeta( v, ValueMetaInterface.TYPE_STRING ), varVal);
+              varVal = m_outputRowMeta.getValueMeta( outputIndex )
+                  //.convertData( new ValueMeta( v, ValueMetaInterface.TYPE_STRING ), varVal );
+                  .convertData( ValueMetaFactory.createValueMeta( v, ValueMetaInterface.TYPE_STRING ), varVal );
             }
             outputRow[outputIndex] = varVal;
           }
@@ -410,7 +409,9 @@ public class CPythonScriptExecutorData extends BaseStepData implements StepDataI
   protected static List<Object[]> generateRandomRows( RowMetaInterface inputMeta, Random r ) throws KettleException {
     List<Object[]> rows = new ArrayList<Object[]>( NUM_RANDOM_ROWS );
     // ValueMetaInterface numericVM = new ValueMeta( "num", ValueMetaInterface.TYPE_NUMBER ); //$NON-NLS-1$
-    ValueMetaInterface numericVM = ValueMetaFactory.createValueMeta( "num", ValueMetaInterface.TYPE_NUMBER ); //$NON-NLS-1$
+    ValueMetaInterface
+        numericVM =
+        ValueMetaFactory.createValueMeta( "num", ValueMetaInterface.TYPE_NUMBER ); //$NON-NLS-1$
 
     for ( int i = 0; i < NUM_RANDOM_ROWS; i++ ) {
       Object[] currentRow = new Object[inputMeta.size()];
@@ -501,7 +502,7 @@ public class CPythonScriptExecutorData extends BaseStepData implements StepDataI
 
         Random r = new Random( 1 );
 
-        session = acquirePySession( requester, log );
+        session = acquirePySession( requester, log, vars );
 
         List<List<Object[]>> randomRows = new ArrayList<List<Object[]>>();
         if ( inputMetas != null ) {
@@ -533,13 +534,11 @@ public class CPythonScriptExecutorData extends BaseStepData implements StepDataI
           return result;
         } else {
           // this variable is some other type
-          ValueMetaInterface
-              vm =
-              type == PythonSession.PythonVariableType.Image ?
-                  //new ValueMeta( varToGet, ValueMetaInterface.TYPE_SERIALIZABLE ) :
-                  ValueMetaFactory.createValueMeta( varToGet, ValueMetaInterface.TYPE_SERIALIZABLE ) :
-                  //new ValueMeta( varToGet, ValueMetaInterface.TYPE_STRING );
-                  ValueMetaFactory.createValueMeta( varToGet, ValueMetaInterface.TYPE_STRING );
+          ValueMetaInterface vm = type == PythonSession.PythonVariableType.Image ?
+              //new ValueMeta( varToGet, ValueMetaInterface.TYPE_SERIALIZABLE ) :
+              ValueMetaFactory.createValueMeta( varToGet, ValueMetaInterface.TYPE_SERIALIZABLE ) :
+              //new ValueMeta( varToGet, ValueMetaInterface.TYPE_STRING );
+              ValueMetaFactory.createValueMeta( varToGet, ValueMetaInterface.TYPE_STRING );
           PythonSession.RowMetaAndRows result = new PythonSession.RowMetaAndRows();
           result.m_rowMeta = new RowMeta();
           result.m_rowMeta.addValueMeta( vm );
@@ -553,11 +552,11 @@ public class CPythonScriptExecutorData extends BaseStepData implements StepDataI
     }
   }
 
-  public static void initPython() throws KettleException {
+  public static void initPython( VariableSpace vars, LogChannelInterface log ) throws KettleException {
     // check python availability
     if ( !PythonSession.pythonAvailable() ) {
       // initialize...
-      PythonSession.initSession( "python" );
+      PythonSession.initSession( "python", vars, log );
     } else {
       return;
     }
@@ -574,9 +573,10 @@ public class CPythonScriptExecutorData extends BaseStepData implements StepDataI
     }
   }
 
-  public static PythonSession acquirePySession( Object requester, LogChannelInterface log ) throws KettleException {
+  public static PythonSession acquirePySession( Object requester, LogChannelInterface log, VariableSpace vars )
+      throws KettleException {
     // check availability first...
-    initPython();
+    initPython( vars, log );
 
     PythonSession session;
     try {
