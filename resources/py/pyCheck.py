@@ -31,7 +31,15 @@ def check_libraries():
     check_library('pickle')
     check_library('scipy')
     check_library('sklearn')
-    check_library('matplotlib')
+    
+    if check_library('matplotlib'):
+        if not check_library('matplotlib', ['pyplot']):
+            print(
+                'It appears that the \'pyplot\' class in matplotlib ' +
+                'did not import correctly.\nIf you are using a Python ' +
+                'virtual environment please install the \'_tkinter\' module.' +
+                '\nPython must be installed as a framework for matplotlib ' +
+                'to work properly.')
 
     check_library('numpy')
     if check_library('pandas', ['DataFrame'], pandas_version_min):
