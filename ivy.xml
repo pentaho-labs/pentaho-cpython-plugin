@@ -62,7 +62,9 @@ explicitly covering such access.
     <dependency org="org.owasp.esapi" name="esapi" rev="${dependency.esapi.revision}" conf="test->default"/>    
 
     <dependency org="org.mockito"              name="mockito-all"          rev="${dependency.mockito.revision}"  transitive="false" conf="test->default"/>
-    <dependency org="pentaho-kettle" name="kettle-engine-test" rev="${dependency.kettle.revision}" transitive="false" conf="test->default" />    
+    <dependency org="pentaho-kettle" name="kettle-engine" rev="${dependency.kettle.revision}" transitive="false" changing="true" conf="test->default">
+      <artifact name="kettle-engine" ext="jar" m:classifier="tests" />
+    </dependency>
     <dependency org="junit" name="junit" rev="${dependency.junit.revision}" conf="test->default" />
     <dependency org="commons-logging" name="commons-logging" rev="${dependency.commons.logging.revision}" conf="test->default"/>
     <dependency org="javax.servlet"                    name="servlet-api"          rev="${dependency.servlet.api.revision}"             transitive="false" conf="test->default"/>    

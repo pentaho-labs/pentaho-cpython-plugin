@@ -117,13 +117,13 @@ public class CPythonScriptExecutorMeta extends BaseStepMeta implements StepMetaI
   /**
    * The name(s) of the data frames to create in python - one corresponding to each incoming row set
    */
-  protected List<String> m_frameNames = new ArrayList<String>();
+  protected List<String> m_frameNames = new ArrayList<>();
 
   /**
    * List of variables to get from python. This should hold exactly one variable in the case of extracting a data frame.
    * There can be more than one if all variables are either strings or images
    */
-  protected List<String> m_pyVarsToGet = new ArrayList<String>();
+  protected List<String> m_pyVarsToGet = new ArrayList<>();
 
   /**
    * Whether to include the pandas frame row index as an output field (when retrieving a single data frame from python
@@ -433,7 +433,7 @@ public class CPythonScriptExecutorMeta extends BaseStepMeta implements StepMetaI
   public RowMetaInterface determineOutputRowMeta( RowMetaInterface[] info, VariableSpace space )
       throws KettleException {
 
-    List<RowMetaInterface> incomingMetas = new ArrayList<RowMetaInterface>();
+    List<RowMetaInterface> incomingMetas = new ArrayList<>();
     RowMetaInterface rmi = new RowMeta();
 
     // possibly multiple incoming row sets
@@ -582,9 +582,9 @@ public class CPythonScriptExecutorMeta extends BaseStepMeta implements StepMetaI
     m_rowsToProcessSize = "";
     m_doingReservoirSampling = false;
     m_reservoirSamplingSize = "";
-    m_frameNames = new ArrayList<String>();
+    m_frameNames = new ArrayList<>();
     m_continueOnUnsetVars = false;
-    m_pyVarsToGet = new ArrayList<String>();
+    m_pyVarsToGet = new ArrayList<>();
     m_script = BaseMessages.getString( PKG, "CPythonScriptExecutorMeta.InitialScriptText" ); //$NON-NLS-1$
   }
 
@@ -854,10 +854,11 @@ public class CPythonScriptExecutorMeta extends BaseStepMeta implements StepMetaI
   }
 
   public void clearStepIOMeta() {
-    ioMeta = null;
+    super.resetStepIoMeta();
   }
 
   @Override public StepIOMetaInterface getStepIOMeta() {
+    StepIOMetaInterface ioMeta = super.getStepIOMeta( false );
     if ( ioMeta == null ) {
       ioMeta = new StepIOMeta( true, true, false, false, false, false );
       int numExpectedStreams = m_frameNames.size();
@@ -867,6 +868,7 @@ public class CPythonScriptExecutorMeta extends BaseStepMeta implements StepMetaI
             new Stream( StreamInterface.StreamType.INFO, null, "Input to pandas frame " + ( i + 1 ), StreamIcon.INFO,
                 null ) ); //$NON-NLS-1$
       }
+      setStepIOMeta( ioMeta );
     }
 
     return ioMeta;
