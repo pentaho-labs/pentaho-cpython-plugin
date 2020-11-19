@@ -492,6 +492,7 @@ public class CPythonScriptExecutorData extends BaseStepData implements StepDataI
           throw new KettleException(
               BaseMessages.getString( PKG, "CPythonScriptExecutorData.Error.CantDetermineOutputMeta" ) );
         }
+        script = vars.environmentSubstitute( script );
 
         if ( inputMetas != null && inputMetas.size() != frameNames.size() ) {
           throw new KettleException(
