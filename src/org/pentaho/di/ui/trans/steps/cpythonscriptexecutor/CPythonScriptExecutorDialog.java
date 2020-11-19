@@ -883,7 +883,7 @@ public class CPythonScriptExecutorDialog extends BaseStepDialog implements StepD
     setItemText( wtvRowsToProcessSize, meta.getRowsToProcessSize() );
     wbReservoirSampling.setSelection( meta.getDoingReservoirSampling() );
     setItemText( wtvReservoirSamplingSize, meta.getReservoirSamplingSize() );
-    setItemText( wtvRandomSeed, meta.getRandomSeed());
+    setItemText( wtvRandomSeed, Const.NVL(meta.getRandomSeed(), ""));
     wbIncludeInputAsOutput.setSelection( meta.getIncludeInputAsOutput() );
     setItemText(wtvPyVarsToGet, listToString( meta.getPythonVariablesToGet() ) );
     wbContinueOnUnsetVars.setSelection( meta.getContinueOnUnsetVars() );
